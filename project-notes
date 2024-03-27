@@ -185,8 +185,11 @@ pipeline {
         }
         stage('Docker build') {
             steps {
-                sh "docker build -t manisankardivi/boardgame ."
-                sh 'docker run -itd --name boardgame-cont -p 8090:8080 manisankardivi/boardgame'
+                script{
+                    withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+                        sh 'docker build -t manisankardivi/boardgame .'
+                    }
+                }
             }
         }
         stage('Trivy Image Scan') {
@@ -197,9 +200,18 @@ pipeline {
         stage('Docker Registry') {
             steps {
                 script{
-                    withCredentials([string(credentialsId: 'dockerhub-cred', variable: 'passwd')]) {
-                        sh 'docker login -u manisankardivi -p ${passwd}'
+                    withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
                         sh 'docker push manisankardivi/boardgame'
+                    }
+                }
+            }
+        }
+        
+        stage('K8S depolyment') {
+            steps {
+                script{
+                    withKubeConfig(caCertificate: '', clusterName: 'kubernetes', contextName: '', credentialsId: 'k8s-token', namespace: 'webapps', restrictKubeConfigAccess: false, serverUrl: 'https://172.31.10.134:6443') {
+                        sh 'kubectl apply -f depolyment-service.yaml'
                     }
                 }
             }
@@ -232,7 +244,7 @@ pipeline {
                     from: 'jenkins@example.com',
                     replyTo: 'jenkins@example.com',
                     mimeType: 'text/html',
-                    attachmentsPattern: 'trivy-fs-report.html'
+                    attachmentsPattern: 'trivy-fs-report.html,trivy-image-report.html'
                 )
             }
         }
