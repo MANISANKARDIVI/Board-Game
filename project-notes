@@ -142,7 +142,7 @@ pipeline {
     stages {
         stage('Git Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/MANISANKARDIVI/Board-Game.git'
+                git branch: 'main', url: 'https://github.com/MANISANKARDIVI/wsl-boardgame.git'
             }
         }
         stage('compile') {
@@ -202,16 +202,6 @@ pipeline {
                 script{
                     withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
                         sh 'docker push manisankardivi/boardgame'
-                    }
-                }
-            }
-        }
-        
-        stage('K8S depolyment') {
-            steps {
-                script{
-                    withKubeConfig(caCertificate: '', clusterName: 'kubernetes', contextName: '', credentialsId: 'k8s-token', namespace: 'webapps', restrictKubeConfigAccess: false, serverUrl: 'https://172.31.10.134:6443') {
-                        sh 'kubectl apply -f depolyment-service.yaml'
                     }
                 }
             }
